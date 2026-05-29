@@ -531,9 +531,9 @@ function getToken() {
 //  SLACK API
 // ──────────────────────────────────────────────
 async function lookupUser(email) {
-  const r = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(email)}`, {
-    headers: { Authorization: `Bearer ${getToken()}` }
-  });
+  // Token via query param (sem Authorization header) para evitar preflight CORS
+  const url = `https://slack.com/api/users.lookupByEmail?token=${encodeURIComponent(getToken())}&email=${encodeURIComponent(email)}`;
+  const r = await fetch(url);
   const d = await r.json();
   if (!d.ok) throw new Error(d.error);
   const u = d.user;
@@ -542,11 +542,9 @@ async function lookupUser(email) {
 }
 
 async function postMessage(userId, text) {
-  const r = await fetch('https://slack.com/api/chat.postMessage', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ channel: userId, text, mrkdwn: true })
-  });
+  // form-urlencoded (sem custom headers) para evitar preflight CORS
+  const body = new URLSearchParams({ token: getToken(), channel: userId, text, mrkdwn: 'true' });
+  const r = await fetch('https://slack.com/api/chat.postMessage', { method: 'POST', body });
   const d = await r.json();
   if (!d.ok) throw new Error(d.error);
 }
