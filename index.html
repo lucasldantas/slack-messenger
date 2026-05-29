@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slack Messenger</title>
+<style>
+:root {
+  --purple: #4A154B;
+  --purple2: #611f69;
+  --green: #2eb67d;
+  --yellow: #ecb22e;
+  --red: #e01e5a;
+  --blue: #1264a3;
+  --bg: #f0eff5;
+  --surface: #ffffff;
+  --border: #e0dfe6;
+  --text: #1d1c1d;
+  --muted: #696969;
+  --radius: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+header {
+  background: var(--purple);
+  color: white;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+header h1 { font-size: 18px; font-weight: 800; flex: 1; letter-spacing: -.3px; }
+.token-group { display: flex; gap: 8px; align-items: center; }
+.token-group input {
+  padding: 6px 12px; border-radius: 6px; border: none;
+  width: 280px; font-size: 13px; background: rgba(255,255,255,.15);
+  color: white; outline: none;
+}
+.token-group input::placeholder { color: rgba(255,255,255,.55); }
+.token-group input:focus { background: rgba(255,255,255,.25); }
+.btn-token {
+  padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; background: rgba(255,255,255,.2); color: white;
+}
+.btn-token:hover { background: rgba(255,255,255,.3); }
+.token-saved { font-size: 12px; color: #a8f5c8; display: none; }
+
+/* ── Layout ── */
+main {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 20px;
+  padding: 20px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card-title {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-body { padding: 16px; }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+}
+.tb { /* toolbar button */
+  padding: 5px 9px; background: white; border: 1px solid var(--border);
+  border-radius: 5px; cursor: pointer; font-size: 13px; color: var(--text);
+  line-height: 1; transition: background .1s, border-color .1s; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+}
+.tb:hover { background: #efefef; border-color: #c0bfc6; }
+.tb.bold { font-weight: 900; }
+.tb.italic { font-style: italic; }
+.tb.strike { text-decoration: line-through; }
+.tb.mono { font-family: monospace; font-size: 12px; }
+.sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
+
+/* ── Editor ── */
+#editor {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px;
+  border: none;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.65;
+  font-family: inherit;
+  outline: none;
+  color: var(--text);
+}
+
+/* ── Preview ── */
+.preview-wrap {
+  border-top: 1px solid var(--border);
+  background: #f9f9fb;
+}
+.preview-label {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-label span { color: #b0b; font-weight: 400; font-style: italic; text-transform: none; letter-spacing: 0; }
+#preview {
+  padding: 14px;
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 48px;
+  color: var(--text);
+  word-break: break-word;
+}
+#preview strong { font-weight: 700; }
+#preview em { font-style: italic; }
+#preview del { text-decoration: line-through; color: var(--muted); }
+#preview code {
+  background: #f0f0f0; border: 1px solid #ddd; border-radius: 3px;
+  padding: 1px 5px; font-family: monospace; font-size: 13px;
+}
+#preview pre {
+  background: #1d1c1d; color: #e8e8e8; border-radius: 6px;
+  padding: 12px 14px; font-family: monospace; font-size: 13px;
+  overflow-x: auto; white-space: pre-wrap; margin: 4px 0;
+}
+#preview blockquote {
+  border-left: 4px solid #ddd; margin: 2px 0;
+  padding: 2px 0 2px 12px; color: var(--muted);
+}
+#preview a { color: var(--blue); text-decoration: none; }
+#preview a:hover { text-decoration: underline; }
+#preview .mention {
+  background: #e8f0fb; color: var(--blue);
+  border-radius: 3px; padding: 0 3px; font-weight: 600;
+}
+
+/* ── Dropdowns ── */
+.dd { position: relative; display: inline-block; }
+.dd-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+  background: white; border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0,0,0,.13); min-width: 200px; padding: 4px 0;
+}
+.dd-menu.right { left: auto; right: 0; }
+.dd-menu.hidden { display: none; }
+.dd-item {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 14px; border: none; background: none;
+  text-align: left; cursor: pointer; font-size: 13px; color: var(--text); gap: 12px;
+}
+.dd-item:hover { background: #f4f4f4; }
+.dd-item .tag-chip {
+  background: #f0f0f0; border-radius: 4px;
+  padding: 1px 5px; font-family: monospace; font-size: 11px; color: var(--muted); flex-shrink: 0;
+}
+
+/* ── Emoji picker ── */
+.emoji-picker {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+  width: 300px; max-height: 320px; overflow-y: auto;
+  background: white; border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0,0,0,.13); padding: 8px;
+}
+.emoji-picker.hidden { display: none; }
+.ec-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); padding: 6px 4px 3px;
+}
+.eg { display: flex; flex-wrap: wrap; gap: 1px; }
+.em {
+  width: 34px; height: 34px; border: none; background: none; cursor: pointer;
+  border-radius: 4px; font-size: 20px; display: flex; align-items: center; justify-content: center;
+}
+.em:hover { background: #f0f0f0; }
+
+/* ── Recipients ── */
+#recipientsInput {
+  width: 100%; height: 160px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-family: monospace; line-height: 1.6; resize: vertical; outline: none;
+}
+#recipientsInput:focus { border-color: var(--blue); }
+.rec-meta { font-size: 12px; color: var(--muted); margin: 6px 0 14px; }
+
+.btn-send {
+  width: 100%; padding: 11px; border: none; border-radius: var(--radius);
+  background: var(--green); color: white; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity .2s; letter-spacing: -.2px;
+}
+.btn-send:hover:not(:disabled) { opacity: .88; }
+.btn-send:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Status list ── */
+.status-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.si {
+  display: grid; grid-template-columns: 22px 1fr;
+  align-items: start; gap: 8px; padding: 9px 10px;
+  border-radius: 6px; font-size: 13px; border: 1px solid var(--border);
+}
+.si.pending { background: #fafafa; }
+.si.sending { background: #fffbea; border-color: var(--yellow); }
+.si.ok      { background: #f0faf5; border-color: var(--green); }
+.si.err     { background: #fef2f4; border-color: var(--red); }
+.si-icon { font-size: 15px; margin-top: 1px; }
+.si-email { font-weight: 600; word-break: break-all; }
+.si-msg   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+.progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 10px; }
+.progress-bar { height: 4px; background: var(--green); border-radius: 2px; transition: width .3s; width: 0%; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <h1>🚀 Slack Messenger</h1>
+  <div class="token-group">
+    <input type="password" id="tokenInput" placeholder="Token do bot  xoxb-...">
+    <button class="btn-token" onclick="saveToken()">Salvar token</button>
+    <span class="token-saved" id="tokenSaved">✓ Salvo</span>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- ── Left: editor ── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card">
+      <div class="card-title">Mensagem</div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="tb bold"   onclick="wrap('<b>','</b>')"              title="Negrito (Ctrl+B)">B</button>
+        <button class="tb italic" onclick="wrap('<i>','</i>')"              title="Itálico (Ctrl+I)">I</button>
+        <button class="tb strike" onclick="wrap('<s>','</s>')"              title="Tachado">S</button>
+        <div class="sep"></div>
+        <button class="tb mono"   onclick="wrap('<code>','</code>')"        title="Código inline">&lt;/&gt;</button>
+        <button class="tb"        onclick="wrap('<bloco>\n','\n</bloco>')"  title="Bloco de código">⬜ bloco</button>
+        <button class="tb"        onclick="wrap('<cita>','</cita>')"        title="Citação">❝ cita</button>
+        <div class="sep"></div>
+        <button class="tb"        onclick="insertLink()"                    title="Inserir link">🔗 Link</button>
+        <div class="sep"></div>
+
+        <!-- Emoji -->
+        <div class="dd">
+          <button class="tb" onclick="toggleDD('emojiPicker')">😀 Emoji</button>
+          <div id="emojiPicker" class="emoji-picker hidden"></div>
+        </div>
+
+        <!-- Tags -->
+        <div class="dd">
+          <button class="tb" onclick="toggleDD('tagsMenu')">🏷️ Tags ▾</button>
+          <div id="tagsMenu" class="dd-menu hidden" style="min-width:240px">
+            <button class="dd-item" onclick="ins('<user>')">          Nome completo    <span class="tag-chip">&lt;user&gt;</span></button>
+            <button class="dd-item" onclick="ins('<primeiro_nome>')"> Primeiro nome    <span class="tag-chip">&lt;primeiro_nome&gt;</span></button>
+            <button class="dd-item" onclick="ins('<@user>')">         @Menção          <span class="tag-chip">&lt;@user&gt;</span></button>
+            <button class="dd-item" onclick="ins('<email>')">         E-mail           <span class="tag-chip">&lt;email&gt;</span></button>
+            <button class="dd-item" onclick="ins('<username>')">      Username         <span class="tag-chip">&lt;username&gt;</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Textarea -->
+      <textarea id="editor" placeholder="Digite sua mensagem…&#10;Use a barra de ferramentas ou escreva as tags manualmente."></textarea>
+
+      <!-- Preview -->
+      <div class="preview-wrap">
+        <div class="preview-label">
+          Prévia no Slack
+          <span>usando dados de exemplo: João Silva / joao@empresa.com</span>
+        </div>
+        <div id="preview"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Right: recipients + status ── -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card">
+      <div class="card-title">Destinatários</div>
+      <div class="card-body">
+        <textarea id="recipientsInput"
+          placeholder="joao@empresa.com&#10;maria@empresa.com&#10;pedro@empresa.com&#10;&#10;(um e-mail por linha)"></textarea>
+        <div class="rec-meta" id="recMeta">0 destinatários</div>
+        <button class="btn-send" id="sendBtn" onclick="enviar()">▶ Enviar mensagens</button>
+      </div>
+    </div>
+
+    <div class="card" id="statusCard" style="display:none">
+      <div class="card-title">
+        <span id="statusTitle">Status</span>
+        <button onclick="limparStatus()"
+          style="font-size:11px;padding:3px 8px;border:1px solid var(--border);
+                 border-radius:4px;background:white;cursor:pointer;color:var(--muted)">
+          Limpar
+        </button>
+      </div>
+      <div class="card-body" style="padding-bottom:12px">
+        <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="status-list" id="statusList" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ──────────────────────────────────────────────
+//  EMOJIS
+// ──────────────────────────────────────────────
+const EMOJIS = {
+  'Expressões':  ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😋','😛','😜','🤪','😎','🤩','🥳','😏','😒','😔','😟','😣','😩','🥺','😢','😭','😤','😠','😡','🤬','😈','👻','💀'],
+  'Gestos':      ['👍','👎','👌','🤌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','🖐️','✋','🖖','👏','🙌','🤝','🙏','💪','🫶'],
+  'Objetos':     ['📱','💻','🖥️','⌨️','🖱️','📧','📝','📋','📌','📎','🔗','🔒','🔓','💡','🔔','📢','📣','📦','🗂️','📁','✏️','📊','📈','📉','🔑','🛡️','⚙️','🔧','🔨'],
+  'Símbolos':    ['✅','❌','⚠️','ℹ️','❓','❗','🔴','🟠','🟡','🟢','🔵','🟣','⭐','🌟','🔥','💯','🎉','🎊','🚀','🏆','🎯','💰','💎','⏰','📅','🗓️','🔁','⬆️','⬇️','➡️','⬅️'],
+};
+
+function buildEmojis() {
+  const p = document.getElementById('emojiPicker');
+  for (const [cat, list] of Object.entries(EMOJIS)) {
+    const lbl = document.createElement('div');
+    lbl.className = 'ec-label';
+    lbl.textContent = cat;
+    p.appendChild(lbl);
+    const grid = document.createElement('div');
+    grid.className = 'eg';
+    list.forEach(e => {
+      const b = document.createElement('button');
+      b.className = 'em'; b.textContent = e; b.title = e;
+      b.onclick = () => { ins(e); closeDD(); };
+      grid.appendChild(b);
+    });
+    p.appendChild(grid);
+  }
+}
+
+// ──────────────────────────────────────────────
+//  TOOLBAR HELPERS
+// ──────────────────────────────────────────────
+const ed = () => document.getElementById('editor');
+
+function ins(text) {
+  const t = ed(), s = t.selectionStart, e = t.selectionEnd;
+  t.value = t.value.slice(0, s) + text + t.value.slice(e);
+  t.selectionStart = t.selectionEnd = s + text.length;
+  t.focus(); renderPreview();
+}
+
+function wrap(open, close) {
+  const t = ed(), s = t.selectionStart, e = t.selectionEnd;
+  const sel = t.value.slice(s, e);
+  const rep = open + sel + close;
+  t.value = t.value.slice(0, s) + rep + t.value.slice(e);
+  t.selectionStart = sel ? s : s + open.length;
+  t.selectionEnd   = sel ? s + rep.length : s + open.length;
+  t.focus(); renderPreview();
+}
+
+function insertLink() {
+  const url = prompt('Cole a URL do link:');
+  if (!url) return;
+  const label = prompt('Texto exibido:', url) || url;
+  ins(`[${label}](${url})`);
+}
+
+// Keyboard shortcuts
+document.addEventListener('DOMContentLoaded', () => {
+  ed().addEventListener('keydown', ev => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key === 'b') { ev.preventDefault(); wrap('<b>', '</b>'); }
+    if ((ev.ctrlKey || ev.metaKey) && ev.key === 'i') { ev.preventDefault(); wrap('<i>', '</i>'); }
+  });
+  ed().addEventListener('input', renderPreview);
+});
+
+// ──────────────────────────────────────────────
+//  DROPDOWNS
+// ──────────────────────────────────────────────
+function toggleDD(id) {
+  const el = document.getElementById(id);
+  const wasHidden = el.classList.contains('hidden');
+  closeDD();
+  if (wasHidden) el.classList.remove('hidden');
+}
+function closeDD() {
+  document.querySelectorAll('.dd-menu, .emoji-picker').forEach(e => e.classList.add('hidden'));
+}
+document.addEventListener('click', ev => { if (!ev.target.closest('.dd')) closeDD(); });
+
+// ──────────────────────────────────────────────
+//  TAG SUBSTITUTION  (same logic as the GAS script)
+// ──────────────────────────────────────────────
+function applyTags(msg, user) {
+  return msg
+    .replace(/<user>/gi,          user.nomeCompleto)
+    .replace(/<primeiro_nome>/gi, user.primeiroNome)
+    .replace(/<@user>/gi,         `<@${user.id}>`)
+    .replace(/<email>/gi,         user.email)
+    .replace(/<username>/gi,      user.username)
+    .replace(/<b>([\s\S]*?)<\/b>/gi,         '*$1*')
+    .replace(/<i>([\s\S]*?)<\/i>/gi,         '_$1_')
+    .replace(/<s>([\s\S]*?)<\/s>/gi,         '~$1~')
+    .replace(/<code>([\s\S]*?)<\/code>/gi,   '`$1`')
+    .replace(/<bloco>([\s\S]*?)<\/bloco>/gi, '```$1```')
+    .replace(/<cita>([\s\S]*?)<\/cita>/gi,   (_, t) => t.split('\n').map(l => `> ${l}`).join('\n'))
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<$2|$1>');
+}
+
+// ──────────────────────────────────────────────
+//  SLACK → HTML  (for preview only)
+// ──────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function slackToHtml(text) {
+  const slots = [];
+  const slot = html => { slots.push(html); return `\x00${slots.length-1}\x00`; };
+
+  // 1. Protect code blocks and inline code
+  text = text.replace(/```([\s\S]*?)```/g, (_, c) => slot(`<pre>${escHtml(c.replace(/^\n|\n$/g,''))}</pre>`));
+  text = text.replace(/`([^`\n]+)`/g,      (_, c) => slot(`<code>${escHtml(c)}</code>`));
+
+  // 2. Slack special syntax (before HTML escaping)
+  text = text.replace(/<(https?:\/\/[^|>\s]+)\|([^>]+)>/g, (_, u, l) => slot(`<a href="${u}" target="_blank" rel="noopener">${escHtml(l)}</a>`));
+  text = text.replace(/<(https?:\/\/[^>\s]+)>/g,           (_, u)    => slot(`<a href="${u}" target="_blank" rel="noopener">${escHtml(u)}</a>`));
+  text = text.replace(/<@([A-Z0-9]+)>/g,                   (_, id)   => slot(`<span class="mention">@${id}</span>`));
+
+  // 3. Escape remaining HTML
+  text = escHtml(text);
+
+  // 4. Formatting
+  text = text.replace(/\*([^*\n]+)\*/g,   '<strong>$1</strong>');
+  text = text.replace(/_([^_\n]+)_/g,     '<em>$1</em>');
+  text = text.replace(/~([^~\n]+)~/g,     '<del>$1</del>');
+
+  // 5. Blockquotes (> becomes &gt; after step 3)
+  text = text.replace(/(^|\n)&gt; ?([^\n]*)/g, '$1<blockquote>$2</blockquote>');
+
+  // 6. Restore slots, then newlines
+  text = text.replace(/\x00(\d+)\x00/g, (_, i) => slots[+i]);
+  text = text.replace(/\n/g, '<br>');
+
+  return text;
+}
+
+// ──────────────────────────────────────────────
+//  PREVIEW
+// ──────────────────────────────────────────────
+const DEMO = { id:'U0123ABC', nomeCompleto:'João Silva', primeiroNome:'João', email:'joao@empresa.com', username:'joao.silva' };
+
+function renderPreview() {
+  const raw = ed().value;
+  const slack = applyTags(raw, DEMO);
+  document.getElementById('preview').innerHTML = slackToHtml(slack) || '<span style="color:#bbb;font-style:italic">A prévia aparece aqui…</span>';
+}
+
+// ──────────────────────────────────────────────
+//  RECIPIENTS COUNTER
+// ──────────────────────────────────────────────
+function getEmails() {
+  return document.getElementById('recipientsInput').value
+    .split('\n').map(e => e.trim()).filter(e => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('recipientsInput').addEventListener('input', () => {
+    const n = getEmails().length;
+    document.getElementById('recMeta').textContent = `${n} destinatário${n !== 1 ? 's' : ''}`;
+  });
+});
+
+// ──────────────────────────────────────────────
+//  TOKEN
+// ──────────────────────────────────────────────
+function saveToken() {
+  const v = document.getElementById('tokenInput').value.trim();
+  if (!v) return;
+  localStorage.setItem('slackToken', v);
+  const s = document.getElementById('tokenSaved');
+  s.style.display = 'inline';
+  setTimeout(() => s.style.display = 'none', 2000);
+}
+function getToken() {
+  return document.getElementById('tokenInput').value.trim() || localStorage.getItem('slackToken') || '';
+}
+
+// ──────────────────────────────────────────────
+//  SLACK API
+// ──────────────────────────────────────────────
+async function lookupUser(email) {
+  const r = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(email)}`, {
+    headers: { Authorization: `Bearer ${getToken()}` }
+  });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error);
+  const u = d.user;
+  const nomeCompleto = u.profile.real_name || u.profile.display_name || u.name;
+  return { id: u.id, email, username: u.name, nomeCompleto, primeiroNome: nomeCompleto.split(' ')[0] };
+}
+
+async function postMessage(userId, text) {
+  const r = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel: userId, text, mrkdwn: true })
+  });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error);
+}
+
+// ──────────────────────────────────────────────
+//  SEND
+// ──────────────────────────────────────────────
+let isSending = false;
+
+async function enviar() {
+  if (isSending) return;
+  if (!getToken())                  { alert('Insira o token do bot!'); return; }
+  if (!ed().value.trim())           { alert('Escreva uma mensagem primeiro!'); return; }
+  const emails = getEmails();
+  if (!emails.length)               { alert('Adicione ao menos um e-mail válido.'); return; }
+
+  isSending = true;
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
+
+  // Show status card
+  const card = document.getElementById('statusCard');
+  const list = document.getElementById('statusList');
+  const title = document.getElementById('statusTitle');
+  const bar = document.getElementById('progressBar');
+  card.style.display = ''; list.innerHTML = '';
+  bar.style.width = '0%';
+
+  // Create rows
+  const rows = {};
+  emails.forEach(email => {
+    const el = document.createElement('div');
+    el.className = 'si pending';
+    el.innerHTML = `<span class="si-icon">⏳</span>
+      <div><div class="si-email">${escHtml(email)}</div>
+           <div class="si-msg">Aguardando…</div></div>`;
+    list.appendChild(el);
+    rows[email] = el;
+  });
+
+  let ok = 0, errs = 0;
+
+  for (let i = 0; i < emails.length; i++) {
+    const email = emails[i];
+    const row = rows[email];
+    row.className = 'si sending';
+    row.querySelector('.si-icon').textContent = '🔄';
+    row.querySelector('.si-msg').textContent = 'Buscando usuário…';
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    try {
+      const user = await lookupUser(email);
+      row.querySelector('.si-msg').textContent = `${user.nomeCompleto} — enviando…`;
+      const texto = applyTags(ed().value, user);
+      await postMessage(user.id, texto);
+      row.className = 'si ok';
+      row.querySelector('.si-icon').textContent = '✅';
+      row.querySelector('.si-msg').textContent = `Enviado para ${user.nomeCompleto}`;
+      ok++;
+    } catch (e) {
+      row.className = 'si err';
+      row.querySelector('.si-icon').textContent = '❌';
+      row.querySelector('.si-msg').textContent = e.message;
+      errs++;
+    }
+
+    const pct = Math.round(((i + 1) / emails.length) * 100);
+    bar.style.width = pct + '%';
+    title.textContent = `Status — ✅ ${ok} enviados · ❌ ${errs} erro${errs !== 1 ? 's' : ''} · ${emails.length - i - 1} restantes`;
+  }
+
+  title.textContent = `Concluído — ✅ ${ok} enviados · ❌ ${errs} erro${errs !== 1 ? 's' : ''}`;
+  btn.disabled = false; btn.textContent = '▶ Enviar mensagens';
+  isSending = false;
+}
+
+function limparStatus() {
+  document.getElementById('statusCard').style.display = 'none';
+  document.getElementById('statusList').innerHTML = '';
+  document.getElementById('progressBar').style.width = '0%';
+}
+
+// ──────────────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('slackToken');
+  if (saved) document.getElementById('tokenInput').value = saved;
+  buildEmojis();
+  renderPreview();
+});
+</script>
+</body>
+</html>
