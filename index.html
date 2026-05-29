@@ -194,23 +194,11 @@ main {
 }
 
 /* ── Emoji picker ── */
-.emoji-picker {
+.emoji-picker-wrap {
   position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
-  width: 300px; max-height: 320px; overflow-y: auto;
-  background: white; border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: 0 6px 20px rgba(0,0,0,.13); padding: 8px;
 }
-.emoji-picker.hidden { display: none; }
-.ec-label {
-  font-size: 10px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--muted); padding: 6px 4px 3px;
-}
-.eg { display: flex; flex-wrap: wrap; gap: 1px; }
-.em {
-  width: 34px; height: 34px; border: none; background: none; cursor: pointer;
-  border-radius: 4px; font-size: 20px; display: flex; align-items: center; justify-content: center;
-}
-.em:hover { background: #f0f0f0; }
+.emoji-picker-wrap.hidden { display: none; }
+emoji-picker { --border-radius: 8px; }
 
 /* ── Recipients ── */
 #recipientsInput {
@@ -284,8 +272,10 @@ main {
 
         <!-- Emoji -->
         <div class="dd">
-          <button class="tb" onclick="toggleDD('emojiPicker')">😀 Emoji</button>
-          <div id="emojiPicker" class="emoji-picker hidden"></div>
+          <button class="tb" onclick="toggleDD('emojiPickerWrap')">😀 Emoji</button>
+          <div id="emojiPickerWrap" class="emoji-picker-wrap hidden">
+            <emoji-picker></emoji-picker>
+          </div>
         </div>
 
         <!-- Tags -->
@@ -348,34 +338,6 @@ main {
 </main>
 
 <script>
-// ──────────────────────────────────────────────
-//  EMOJIS
-// ──────────────────────────────────────────────
-const EMOJIS = {
-  'Expressões':  ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😋','😛','😜','🤪','😎','🤩','🥳','😏','😒','😔','😟','😣','😩','🥺','😢','😭','😤','😠','😡','🤬','😈','👻','💀'],
-  'Gestos':      ['👍','👎','👌','🤌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','🖐️','✋','🖖','👏','🙌','🤝','🙏','💪','🫶'],
-  'Objetos':     ['📱','💻','🖥️','⌨️','🖱️','📧','📝','📋','📌','📎','🔗','🔒','🔓','💡','🔔','📢','📣','📦','🗂️','📁','✏️','📊','📈','📉','🔑','🛡️','⚙️','🔧','🔨'],
-  'Símbolos':    ['✅','❌','⚠️','ℹ️','❓','❗','🔴','🟠','🟡','🟢','🔵','🟣','⭐','🌟','🔥','💯','🎉','🎊','🚀','🏆','🎯','💰','💎','⏰','📅','🗓️','🔁','⬆️','⬇️','➡️','⬅️'],
-};
-
-function buildEmojis() {
-  const p = document.getElementById('emojiPicker');
-  for (const [cat, list] of Object.entries(EMOJIS)) {
-    const lbl = document.createElement('div');
-    lbl.className = 'ec-label';
-    lbl.textContent = cat;
-    p.appendChild(lbl);
-    const grid = document.createElement('div');
-    grid.className = 'eg';
-    list.forEach(e => {
-      const b = document.createElement('button');
-      b.className = 'em'; b.textContent = e; b.title = e;
-      b.onclick = () => { ins(e); closeDD(); };
-      grid.appendChild(b);
-    });
-    p.appendChild(grid);
-  }
-}
 
 // ──────────────────────────────────────────────
 //  TOOLBAR HELPERS
@@ -425,7 +387,7 @@ function toggleDD(id) {
   if (wasHidden) el.classList.remove('hidden');
 }
 function closeDD() {
-  document.querySelectorAll('.dd-menu, .emoji-picker').forEach(e => e.classList.add('hidden'));
+  document.querySelectorAll('.dd-menu, .emoji-picker-wrap').forEach(e => e.classList.add('hidden'));
 }
 document.addEventListener('click', ev => { if (!ev.target.closest('.dd')) closeDD(); });
 
@@ -631,9 +593,15 @@ function limparStatus() {
 window.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('slackToken');
   if (saved) document.getElementById('tokenInput').value = saved;
-  buildEmojis();
   renderPreview();
 });
+</script>
+<script type="module">
+  import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js';
+  document.querySelector('emoji-picker').addEventListener('emoji-click', e => {
+    ins(e.detail.unicode);
+    closeDD();
+  });
 </script>
 </body>
 </html>
